@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  shipper:
+    build:
+      context: shipper
+    volumes:
+    - ./shipper:/opt/shipper
+
+  recorder:
+    build:
+      context: compose/cli
+    entrypoint: ["f1-2020-telemetry-recorder"]
+    command: ["-h"]
+
+  player:
+    build:
+      context: compose/cli
+    entrypoint: ["f1-2020-telemetry-player"]
+    command: ["-h"]
+
+  monitor:
+    build:
+      context: compose/cli
+    entrypoint: [ "f1-2020-telemetry-monitor" ]
+    command: [ "-h" ]
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  influxdb:
+    image: influxdb:1.7
+
+volumes:
+  grafana_data:
