@@ -5,12 +5,16 @@ services:
     build:
       context: shipper
     volumes:
-    - ./shipper:/apt
+      - ./shipper:/apt
+    ports:
+      - 20777:20777
 
   grafana:
     image: grafana/grafana
     volumes:
       - grafana_data:/var/lib/grafana
+    ports:
+      - 3000:3000
 
   influxdb:
     image: influxdb:1.7
