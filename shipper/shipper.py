@@ -28,6 +28,8 @@ class PackageRepo:
         )
 
     def write_package(self, package):
+        if not 'car_number' in package:
+            return
         json_body = [
             {
                 "measurement": "f1_telemetry",
@@ -43,7 +45,7 @@ class PackageRepo:
 @click.command()
 def ship():
     logger.info('Starting package shipping')
-    listener = TelemetryListener(port=20777, host='localhost')
+    listener = TelemetryListener(port=20777, host='0.0.0.0')
     package_repo = PackageRepo(
         influx_host='influxdb',
         influx_db='f1_telemetry',
