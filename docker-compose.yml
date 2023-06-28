@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  shipper:
+    build:
+      context: shipper
+    volumes:
+    - ./shipper:/apt
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  influxdb:
+    image: influxdb:1.7
+
+volumes:
+  grafana_data:
