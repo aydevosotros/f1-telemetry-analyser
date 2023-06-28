@@ -57,7 +57,7 @@ def ship():
             package_repo.write_package(package)
         except KeyboardInterrupt:
             logger.info("Exiting")
-    
+
 
 if __name__ == '__main__':
     ship()
