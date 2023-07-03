@@ -1,14 +1,19 @@
 import logging
 import sys
+import os
 import click
-from influxdb_client import InfluxDBClient
+from datetime import datetime
+from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from f1_23_telemetry.listener import TelemetryListener
+from f1_23_telemetry.packets import *
 
 # Logging set-up
 logger = logging.getLogger('shipper')
-logger.addHandler(logging.StreamHandler(sys.stdout))
+# logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.INFO)
+
+INFLUX_TOKEN = os.getenv('INFLUX_TOKEN')
 
 
 class PackageRepo:
@@ -19,27 +24,19 @@ class PackageRepo:
         self.influx_token = influx_token
 
         self.influx_client = InfluxDBClient(
-            url=f"http://{influx_host}:{influx_port}",
-            token=influx_token,
-            org="-")
+            url=f"http://{influx_host}:{influx_port}", token=influx_token)
 
         self.write_api = self.influx_client.write_api(
             write_options=SYNCHRONOUS
         )
 
-    def write_package(self, package):
-        if not 'car_number' in package:
-            return
-        json_body = [
-            {
-                "measurement": "f1_telemetry",
-                "tags": {
-                    "car_number": package['car_number']
-                },
-                "fields": package
-            }
-        ]
-        self.write_api.write(self.influx_db, self.influx_org, json_body)
+    def write_package(self, package: PacketCarTelemetryData):
+        player_index = package.header.player_car_index
+        point = Point("CarTelemetry")
+        point.time(datetime.now())
+        [point.field(k, v) for k, v in package.car_telemetry_data[player_index].to_dict().items() if not isinstance(v, list)]
+        self.write_api.write(bucket='telemetry', org='my-org', record=[point])
+        logger.info("Data sent to influx")
 
 
 @click.command()
@@ -50,13 +47,14 @@ def ship():
         influx_host='influxdb',
         influx_db='f1_telemetry',
         influx_port=8086,
-        influx_token=None
+        influx_token=INFLUX_TOKEN,
     )
     while True:
         try:
             package = listener.get()
-            logger.info(f'Received packet: {package}')
-            package_repo.write_package(package)
+            logger.info(f'Received packet of type {type(package)}')
+            if isinstance(package, PacketCarTelemetryData):
+                package_repo.write_package(package)
         except KeyboardInterrupt:
             logger.info("Exiting")
 

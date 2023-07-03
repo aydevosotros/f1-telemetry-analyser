@@ -8,6 +8,8 @@ services:
       - ./shipper:/apt
     ports:
       - 20777:20777/udp
+    env_file:
+      - .env
 
   grafana:
     image: grafana/grafana
@@ -17,7 +19,15 @@ services:
       - 3000:3000
 
   influxdb:
-    image: influxdb:1.7
+    image: influxdb
+    ports:
+      - 8086:8086
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=upgrade
+      - DOCKER_INFLUXDB_INIT_USERNAME=my-user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=my-password
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
 
 volumes:
   grafana_data:
