@@ -49,6 +49,15 @@ def ship():
         influx_port=8086,
         influx_token=INFLUX_TOKEN,
     )
+
+    package_repo.write_package(
+        {
+            "timestamp": datetime.now(),
+            "speed": 100,
+            "car_number": 3
+        }
+    )
+
     while True:
         try:
             package = listener.get()
