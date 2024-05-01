@@ -1,12 +1,13 @@
 import logging
 import sys
 import os
+from urllib.parse import quote_plus
+
 import click
 from datetime import datetime
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
 from f1_23_telemetry.listener import TelemetryListener
 from f1_23_telemetry.packets import *
+from pymongo import MongoClient
 
 # Logging set-up
 logger = logging.getLogger('shipper')
@@ -17,26 +18,17 @@ INFLUX_TOKEN = os.getenv('INFLUX_TOKEN')
 
 
 class PackageRepo:
-    def __init__(self, influx_host, influx_port, influx_db, influx_token):
-        self.influx_host = influx_host
-        self.influx_port = influx_port
-        self.influx_db = influx_db
-        self.influx_token = influx_token
-
-        self.influx_client = InfluxDBClient(
-            url=f"http://{influx_host}:{influx_port}", token=influx_token)
-
-        self.write_api = self.influx_client.write_api(
-            write_options=SYNCHRONOUS
-        )
+    def __init__(self, host, user, password, db):
+        uri = "mongodb://%s:%s@%s" % (
+            quote_plus(user), quote_plus(password), host)
+        self.client = MongoClient(uri)
+        self.db = self.client[db]
 
     def write_package(self, package: PacketCarTelemetryData):
         player_index = package.header.player_car_index
-        point = Point("CarTelemetry")
-        point.time(datetime.now())
-        [point.field(k, v) for k, v in package.car_telemetry_data[player_index].to_dict().items() if not isinstance(v, list)]
-        self.write_api.write(bucket='telemetry', org='my-org', record=[point])
-        logger.info("Data sent to influx")
+        telemetry_collection = self.db.car_telemetry
+        package_id = telemetry_collection.insert_one(package.to_dict())
+        logger.info(f"Data saved with {package_id}")
 
 
 @click.command()
@@ -44,18 +36,10 @@ def ship():
     logger.info('Starting package shipping')
     listener = TelemetryListener(port=20777, host='0.0.0.0')
     package_repo = PackageRepo(
-        influx_host='influxdb',
-        influx_db='f1_telemetry',
-        influx_port=8086,
-        influx_token=INFLUX_TOKEN,
-    )
-
-    package_repo.write_package(
-        {
-            "timestamp": datetime.now(),
-            "speed": 100,
-            "car_number": 3
-        }
+        host="mongo:21017",
+        user="root",
+        password="example",
+        db="f1"
     )
 
     while True:
