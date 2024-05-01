@@ -2,3 +2,4 @@
 click
 f1-23-telemetry
 pymongo
+mongoengine
