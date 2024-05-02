@@ -12,14 +12,13 @@ from f1_23_telemetry.packets import *
 from pymongo import MongoClient
 from mongoengine import *
 
-
 # Logging set-up
 logger = logging.getLogger('shipper')
 # logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.INFO)
 
-
 connect('f1', host="mongo", username="root", password="example")
+
 
 class Player(Enum):
     PRIMARY = 'primary'
@@ -28,6 +27,7 @@ class Player(Enum):
 
 class CarTelemetryDataModel(Document):
     session_uid = StringField(required=True)
+    session_time = StringField(required=True)
     player = EnumField(Player)  # primary or secondary
     speed = IntField()
     throttle = FloatField()
@@ -43,22 +43,21 @@ class PackageMongoRepo:
         self.db = self.client[db]
 
     def write_telemetry(self, package: PacketCarTelemetryData):
-        player_index = package.header.player_car_index
-        telemetry_collection = self.db.car_telemetry
         print(package.to_dict())
         print(f"Writing {package.to_dict()['car_telemetry_data'][1]['speed']}")
         player_telemetry_data = self._write_player_telemetry(
             Player.PRIMARY,
-            session_id=f"{package.header.session_uid}",
+            package_header=package.header,
             package=package.car_telemetry_data[
                 package.header.player_car_index
             ]
         )
         logger.info(f"Data saved with {player_telemetry_data}")
 
-    def _write_player_telemetry(self, player: Player, session_id: str, package: CarTelemetryData):
+    def _write_player_telemetry(self, player: Player, package_header: PacketHeader, package: CarTelemetryData):
         return CarTelemetryDataModel(
-            session_uid=session_id,
+            session_uid=f"{package_header.session_uid}",
+            session_time=package_header.session_time,
             player=player,
             speed=package.speed,
             throttle=package.throttle,
