@@ -44,15 +44,23 @@ class PackageMongoRepo:
 
     def write_telemetry(self, package: PacketCarTelemetryData):
         print(package.to_dict())
-        print(f"Writing {package.to_dict()['car_telemetry_data'][1]['speed']}")
-        player_telemetry_data = self._write_player_telemetry(
+        print(f"Writing {package.to_dict()['car_telemetry_data'][package.header.player_car_index]}")
+        self._write_player_telemetry(
             Player.PRIMARY,
             package_header=package.header,
             package=package.car_telemetry_data[
                 package.header.player_car_index
             ]
         )
-        logger.info(f"Data saved with {player_telemetry_data}")
+        if package.header.secondary_player_car_index != 255:
+            print(f"Writing {package.to_dict()['car_telemetry_data'][package.header.secondary_player_car_index]}")
+            self._write_player_telemetry(
+                Player.SECONDARY,
+                package_header=package.header,
+                package=package.car_telemetry_data[
+                    package.header.secondary_player_car_index
+                ]
+            )
 
     def _write_player_telemetry(self, player: Player, package_header: PacketHeader, package: CarTelemetryData):
         return CarTelemetryDataModel(
