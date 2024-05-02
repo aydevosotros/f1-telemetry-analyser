@@ -65,7 +65,7 @@ class PackageMongoRepo:
     def _write_player_telemetry(self, player: Player, package_header: PacketHeader, package: CarTelemetryData):
         return CarTelemetryDataModel(
             session_uid=f"{package_header.session_uid}",
-            session_time=package_header.session_time,
+            session_time=f"{package_header.session_time}",
             player=player,
             speed=package.speed,
             throttle=package.throttle,
