@@ -48,6 +48,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./shipper
           push: true
           tags: ${{ env.REGISTRY }}/${{ steps.string.outputs.lowercase }}
